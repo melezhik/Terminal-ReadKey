@@ -1,0 +1,28 @@
+
+use Test;
+use Test::Mock;
+
+plan 3;
+
+use Term::termios;
+use Terminal::ReadKey (:_testing);
+
+sub MAIN {
+    temp $Terminal::ReadKey::termios;
+
+    $Terminal::ReadKey::termios = mocked(
+        Term::termios, overriding => {
+            getattr => -> { $Terminal::ReadKey::termios },
+        }
+    );
+
+    lives-ok( { with-termios( sub {} ) }, "with-termios lives");
+
+    # Verify the mock object was called.
+    check-mock($Terminal::ReadKey::termios,
+        *.called('getattr'),
+        *.called('setattr')
+    );
+
+    done-testing;
+}
