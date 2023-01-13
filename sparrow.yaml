@@ -33,8 +33,8 @@ tasks:
           ]
         )
     code: |
-        my $v = config()<version>; 
-        my $s;
+        my $v = config()<version>;
+        my $s = %( version => $v );
         if "{cache_root_dir()}/{$v}_ok".IO ~~ :e {
           $s<status> = "OK";
         } else {
