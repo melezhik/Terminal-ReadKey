@@ -10,7 +10,7 @@ tasks:
       my @columns = ("Rakudo Version", "Status", "Time", "Linux Dist");
       my @rows;
       my $fail = False;
-      for config()<tasks><multi-versions><state><list><> -> $i {
+      for config()<tasks><test-multi-versions><state><> -> $i {
         @rows.push: [ $i<version>, $i<status>,  $i<time>, os() ];
         $fail = True unless $i<status> eq "OK";
       }
@@ -19,19 +19,22 @@ tasks:
       die "some tests failed" if $fail == True;
     depends:
       -
-        name: multi-versions
+        name: test-multi-versions
   -
-    name: multi-versions
+    name: test-multi-versions
     language: Raku
-    config:
-      list:
-        # - 2022.04
-        - 2022.07
-        - 2022.12
+    hub:
+      language: Raku
+      code: |
+        update_state %(
+          list => [
+            { version => " 2022.07" },
+            { version => " 2022.12" },
+          ]
+        )
     code: |
-      my @state;
-      for config()<list><> -> $v {
-        my $s = %( version => $v );
+        my $v = config()<version>; 
+        my $s;
         if "{cache_root_dir()}/{$v}_ok".IO ~~ :e {
           $s<status> = "OK";
         } else {
@@ -42,36 +45,36 @@ tasks:
         } else {
           $s<time> = "NA";
         }
-        @state.push: $s;
-      }
-      update_state %( list => @state );
+        update_state $s;
     init: |
-      for config()<list><> -> $v {
-        run_task("test", %( version => $v ));
-      }
+      run_task "test"; 
     subtasks:
       -
-        name: test
+        name: test        
         language: Bash
         init: |
           ignore_error
         code: |
           set -e
+          version=$(config version)
           echo "Linux version: $os"
           curl -sL https://rakudo.org/dl/rakudo/rakudo-moar-$version-01-linux-x86_64-gcc.tar.gz \
           -o rakudo-moar-$version-01-linux-x86_64-gcc.tar.gz
           tar -xzf rakudo-moar-$version-01-linux-x86_64-gcc.tar.gz          
           eval "$(rakudo-moar-$version-01-linux-x86_64-gcc/scripts/set-env.sh)"
+
           which raku
           which zef
+
           raku --version
           zef --version
-          
+
           cd source/
+
           zef install . --deps-only --test-depends --build-depends --/test -to=home         
           /usr/bin/time -f "%E real,%U user,%S sys | CPU Percentage: %P" -o "${cache_root_dir}/${version}_time" \
-          zef test --debug . && touch "${cache_root_dir}/${version}_ok"
-          
+          zef test --debug . && touch "${cache_root_dir}/${version}_ok"          
+
     depends:
       -
         name: install-deps
