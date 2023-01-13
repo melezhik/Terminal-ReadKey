@@ -28,8 +28,8 @@ tasks:
       code: |
         update_state %(
           list => [
-            { version => " 2022.07" },
-            { version => " 2022.12" },
+            { config => { version => " 2022.07" } },
+            { config => { version => " 2022.12" } },
           ]
         )
     code: |
